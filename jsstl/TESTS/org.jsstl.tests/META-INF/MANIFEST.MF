@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Tests
+Bundle-SymbolicName: org.jsstl.tests
+Bundle-Version: 1.0.0.qualifier
+Export-Package: org
+Require-Bundle: org.jsstl.core;bundle-version="1.0.0"

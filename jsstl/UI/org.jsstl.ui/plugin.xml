@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            allowMultiple="false"
+            category="org.jsstl.ui.category"
+            class="org.jsstl.ui.MonitoringView"
+            id="org.jsstl.ui.view"
+            name="jSSTL View"
+            restorable="true">
+      </view>
+      <category
+            id="org.jsstl.ui.category"
+            name="jSSTL plug-in">
+      </category>
+      <category
+            id="org.jsstl.ui"
+            name="Sample Category">
+      </category>
+      <view
+            category="org.jsstl.ui"
+            class="org.jsstl.ui.views.SampleView"
+            id="org.jsstl.ui.views.SampleView"
+            name="Sample View">
+      </view>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+         <view
+               id="org.jsstl.ui.views.SampleView"
+               ratio="0.5"
+               relationship="right"
+               relative="org.eclipse.ui.views.ProblemView">
+         </view>
+      </perspectiveExtension>
+   </extension>
+   <extension
+         point="org.eclipse.help.contexts">
+      <contexts
+            file="contexts.xml">
+      </contexts>
+   </extension>
+
+</plugin>

@@ -1,0 +1,28 @@
+«IMPORT org::jsstl::xtext::formulas::ui::wizard»
+
+«DEFINE main FOR SSTLSpecificationProjectInfo»
+«EXPAND model FOR this»
+«ENDDEFINE»
+
+«DEFINE model FOR SSTLSpecificationProjectInfo»
+«FILE "src/model/Script.sstl"-»
+/*
+ * This is an example script
+ */
+const N = 10;
+		
+const kappa = 100;
+		
+variable x;
+variable y;
+variable z;
+		
+const M = N;
+		
+formula critical = <<>>[ -kappa , kappa ] { x > 0 };
+formula somewherecritical = !critical;
+formula safe = {y > 50};
+formula managed = critical \S[0,100] safe;
+
+«ENDFILE»
+«ENDDEFINE»

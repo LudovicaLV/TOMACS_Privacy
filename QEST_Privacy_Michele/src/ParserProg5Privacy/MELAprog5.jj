@@ -1,0 +1,739 @@
+options {
+  STATIC = false;
+}
+
+PARSER_BEGIN(MELAprog5)
+
+package ParserProg5;
+
+import java.util.ArrayList;
+import Actions.Action;
+import Actions.EnvAction;
+import Actions.InfAction;
+import Actions.NoInfAction;
+import Actions.PassAction;
+
+import Model.Agent;
+import Model.AgentManager;
+import Model.ExpEvaluator;
+import Model.GlobalManager;
+import Model.Location;
+import Model.LocationManager;
+import Model.ParamManager;
+
+
+public class MELAprog5 {
+       
+    public MELAprog5() {
+        this(new java.io.StringReader(""));
+    }
+
+    public void parseFromString( String modelDef ) throws ParseException, TokenMgrError, NumberFormatException {
+        this.ReInit(new java.io.StringReader(modelDef));
+        this.Input();
+    }
+
+    public void parseFromFile( String filename ) throws ParseException, TokenMgrError, NumberFormatException {
+        try { this.ReInit(new java.io.FileReader(filename)); }
+        catch(java.io.IOException e) {throw new ParseException("Error while opening file " + filename + ": " + e); }
+        this.Input();
+    }
+
+}
+
+PARSER_END(MELAprog5)
+
+/***************************************************************
+SKIP
+***************************************************************/
+
+<DEFAULT,RESET,ID> SKIP :
+{
+  " "
+  | "\t"
+  | "\n"
+  | "\r"
+
+  | <"//" (~["\n","\r"])* ("\n"|"\r"|"\r\n")>
+  | <"/*" (~["*"])* "*" (~["/"] (~["*"])* "*")* "/">
+}
+
+
+/***************************************************************
+TOKENS
+***************************************************************/
+
+ /* LITERALS */
+TOKEN : { < #INTEGER: ("-")? ["0"-"9"] (["0"-"9"])* > }
+TOKEN : { < #FLOAT:
+                            ("-")?  (["0"-"9"])+ "." (["0"-"9"])*
+                            | ("-")?  "." (["0"-"9"])+
+                    > }
+TOKEN : { < #FLOAT_SCIENTIFIC:
+                             ("-")? (["0"-"9"])+ "." (["0"-"9"])* (<EXPONENT>)
+                            |  ("-")? "." (["0"-"9"])+ (<EXPONENT>)
+                            |  ("-")? (["0"-"9"])+ <EXPONENT>
+                    > }
+TOKEN : { < #EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ > }
+TOKEN: { < #LETTER: ["A"-"Z","a"-"z"] > }
+TOKEN: { < #DIGIT: ["0"-"9"] > }
+
+TOKEN: { < #WORD: (["A"-"Z","a"-"z"])+ > }
+
+	
+/*
+IDENTIFIERS
+*/
+
+<DEFAULT> TOKEN : { <SECTION_SPACE : "#Space" > }
+<DEFAULT> TOKEN : { <SECTION_PARAM : "#Parameters" > }
+<DEFAULT> TOKEN : { <SECTION_AGENTS : "#Agents" > }
+<DEFAULT> TOKEN : { <SECTION_ENV : "#Environment" > }
+<DEFAULT> TOKEN : { <SECTION_INIT : "#Initial conditions" > }
+
+<DEFAULT> TOKEN : { <VERTICES : "V" > }
+<DEFAULT> TOKEN : { <EDGES : "E" > }
+
+<DEFAULT> TOKEN : { <KEYWORD_GRAPH : "Graph" > }
+<DEFAULT> TOKEN : { <KEYWORD_ONED : "OneD" > }
+<DEFAULT> TOKEN : { <KEYWORD_TWOD : "TwoD" > }
+<DEFAULT> TOKEN : { <KEYWORD_THREED : "ThreeD" > }
+
+<DEFAULT> TOKEN : { <KEYWORD_LOC : "l" > }
+<DEFAULT> TOKEN : { <KEYWORD_NEIGH : "N" > }
+<DEFAULT> TOKEN : { <KEYWORD_ALL : "all" > }
+
+<DEFAULT> TOKEN : { <EOL : ";" > }
+<DEFAULT> TOKEN : { <PLUS : "+" > }
+<DEFAULT> TOKEN : { <DOT : "." > }
+<DEFAULT> TOKEN : { <SEMICOLON : ":" > }
+<DEFAULT> TOKEN : { <DEFINE : ":=" > }
+
+<DEFAULT> TOKEN : { <ASSIGN : "=" >}
+<DEFAULT> TOKEN : { <LSQ : "[" >}
+<DEFAULT> TOKEN : { <RSQ : "]" >}
+<DEFAULT> TOKEN : { <LR : "(" > }
+<DEFAULT> TOKEN : { <RR : ")" > }
+<DEFAULT> TOKEN : { <QUO : "\"" > }
+<DEFAULT> TOKEN : { <SQUO : "\'" > }
+<DEFAULT> TOKEN : { <EXCL : "!" > }
+<DEFAULT> TOKEN : { <LBRAC : "{" > }
+<DEFAULT> TOKEN : { <RBRAC : "}" > }
+
+<DEFAULT> TOKEN : { <COMMA : "," >}
+<DEFAULT> TOKEN : { <LANG : "<" > }
+<DEFAULT> TOKEN : { <RANG : ">" > }
+<DEFAULT> TOKEN : { <PARALLEL : "||" > }
+
+<DEFAULT> TOKEN : { <DASH : "-" > }
+
+<DEFAULT> TOKEN : { <UP : ">>" > }
+<DEFAULT> TOKEN : { <DOWN : "<<" > }
+
+/*<DEFAULT> TOKEN: { <MELASYMBOL: < DOT > > }*/
+
+<DEFAULT> TOKEN : {<INT : <INTEGER> > }
+<DEFAULT> TOKEN : {<DOUBLE : <FLOAT>|<FLOAT_SCIENTIFIC> > }
+<DEFAULT> TOKEN: { <IDENTIFIER: <LETTER>(<LETTER>|<DIGIT>|"_"|"$"|"#")*> }
+
+/*<DEFAULT> TOKEN: { <UPDATE_LOC: <WORD>> } */
+
+<MATH> TOKEN : { <MATH_EXPR : (<DIGIT> | <SYMBOL> | <SPACE> | <M_AND> | <M_OR> | <M_LINER> | <M_LINEN> | <SQUO>)+ > : DEFAULT }
+<MATH> TOKEN : { <#SPACE : " " | "\t"> }
+<MATH> TOKEN : { <#M_AND : "&&" > }
+<MATH> TOKEN : { <#M_OR : "|"> }
+<MATH> TOKEN : { <#M_LINER : "\r"> }
+<MATH> TOKEN : { <#M_LINEN : "\n"> }
+
+
+TOKEN : { <#SYMBOL : [".", "=", "+", "-", "*", "/", "%", "^", "(", ")", "!", "<", ">", ",", "_", "[","]" ]> }
+TOKEN : { <#PARAM_SYMBOL : [".", "+", "-", "*", "/", "%", "^" ]> }
+
+
+/***********************************************
+GRAMMAR RULES
+***********************************************/
+
+void Input() throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token space;    
+    boolean spaceboolean = false, agents = false, init = false;
+}
+{   {GlobalManager.init();}
+    <SECTION_SPACE>
+    {spaceboolean = true;}
+	<SEMICOLON>
+   	space = SpaceStructure()
+    {GlobalManager.getLocationManager().SpatialSt = space.image;
+    GlobalManager.getLocationManager().MatrixLocationCreation();}
+    <SECTION_PARAM>
+    (
+      Param()
+    )*  
+	<SECTION_AGENTS>
+	{agents = true;}
+    (
+	  Agent()     
+    )+
+	(<SECTION_ENV>  
+	  EnvAgent()     
+    )*
+    {GlobalManager.getAgentManager().MatrixAgentCreation();
+     GlobalManager.getAgentManager().GlobalMatrixCreation(); 
+    }
+   <SECTION_INIT>
+    {init = true;}
+    (
+    	 Init()
+    )
+    { if (!agents && !init) 
+        throw new ParseException("Some model sections are missing"); 
+
+    /*All the following lines are used to print the stored information in the console*/
+    System.out.println("The chosen spatial structure is: " + GlobalManager.getLocationManager().SpatialSt);
+    GlobalManager.PrintHashMap(GlobalManager.getParamManager().paramMap);
+    GlobalManager.PrintNames(GlobalManager.getAgentManager().AgentNames);
+    GlobalManager.PrintActions(GlobalManager.getAgentManager().Agents);
+    GlobalManager.PrintLocations(GlobalManager.getLocationManager().AllLoc);
+    GlobalManager.PrintInitCondition();
+    GlobalManager.PrintNoZeroInitCondition();
+
+    }
+    
+    <EOF>
+}
+
+void Param() throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token t1,t2;
+    
+}
+{		
+    t1 = <IDENTIFIER>
+    <ASSIGN>
+    t2 = <DOUBLE>
+    <EOL>
+    {  double value = Double.parseDouble(t2.image);
+        if(value == Utility.Utility.ERROR_NUM) {
+            throw new ParseException("line " + t2.beginLine + " colum " + t2.beginColumn +": "+t1.image +" not correctly defined!"); 
+        }
+        GlobalManager.getParamManager().addParam(t1.image, value); }
+          
+}
+
+void Agent() throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token t;
+    Agent agent;
+}
+{
+    t = <IDENTIFIER>
+    (
+      <LR>
+    <KEYWORD_LOC>
+    <RR>
+     )*
+    {agent = new Agent(t.image);}
+    <DEFINE>
+    Action(agent) 
+    (
+        <PLUS> 
+        Action(agent) 
+    )* 
+    <EOL>
+}
+
+
+void EnvAgent() throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token t;
+    Agent agent;
+}
+{
+    t = <IDENTIFIER>
+    {agent = new Agent(t.image);}
+    <DEFINE>
+    EnvAction(agent) 
+    (
+        <PLUS> 
+        EnvAction(agent) 
+    )* 
+    <EOL>
+}
+
+/*  So far problem solved without using this part
+
+void Env() throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token t;
+    Env agent;
+}
+{
+    t = <IDENTIFIER>
+    {AgentManager.addAgentName(t.image);
+     agent = new Agent(t.image);}
+    <DEFINE>
+    EnvAction(agent) 
+    (
+        <PLUS> 
+        EnvAction(agent) 
+    )* 
+    <EOL>
+}
+*/
+
+Token SpaceStructure() throws NumberFormatException, RuntimeException, ParseException :
+{Token spaceKey=null;}
+{   
+    [   
+        LOOKAHEAD(2)
+        spaceKey = < KEYWORD_GRAPH >
+        { setGraph();}
+        |
+        LOOKAHEAD(2)
+        spaceKey = <  KEYWORD_ONED >
+        {setOneD();}
+        |
+        LOOKAHEAD(2)
+        spaceKey = <  KEYWORD_TWOD >
+        {setTwoD();}
+        |
+        LOOKAHEAD(2)
+        spaceKey = <  KEYWORD_THREED >
+        {setThreeD();}
+    ]
+    {
+      return spaceKey;
+    }   
+}
+
+
+Token InfSet() throws NumberFormatException, RuntimeException, ParseException :
+{Token set=null;}
+{   
+    [   
+        LOOKAHEAD(1)
+        set = < KEYWORD_LOC >
+        |
+        LOOKAHEAD(1)
+        set = <  KEYWORD_NEIGH >
+        |
+        LOOKAHEAD(1)
+        set = <  KEYWORD_ALL >
+    ]
+    {
+      return set;
+    }   
+}
+
+
+Token MelaSymbol() throws NumberFormatException, RuntimeException, ParseException :
+{Token sym=null;}
+{   
+    [   
+        LOOKAHEAD(1)
+        sym = < DOT >
+        |
+        LOOKAHEAD(1)
+        sym = <  UP >
+        |
+        LOOKAHEAD(1)
+        sym = <  DOWN >
+    ]
+    {
+      return sym;
+    }
+    
+}
+
+Token UpdateLoc() throws NumberFormatException, RuntimeException, ParseException :
+{Token update=null;}
+{   
+    [   
+        LOOKAHEAD(1)
+        update = < KEYWORD_LOC >
+        |
+        LOOKAHEAD(1)
+        update = <  IDENTIFIER >
+    ]
+    { 
+    return update;
+    }
+    
+}
+
+
+void Action(Agent agent) throws NumberFormatException, RuntimeException, ParseException :
+{}
+{   
+    [   
+        LOOKAHEAD(2)
+        NoInfAction(agent)
+        |
+        LOOKAHEAD(2)
+        InfAction(agent)
+        |
+        LOOKAHEAD(2)
+        PassAction(agent)
+    ]
+}
+
+
+void NoInfAction(Agent agent) throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token name = null, rateName = null, symbol=null, update, updateloc=null, range = null; 
+}
+{  
+    <LR>
+    name = <IDENTIFIER>
+    <COMMA>
+    rateName = <IDENTIFIER>
+    <RR>
+    symbol = MelaSymbol()
+    update = <IDENTIFIER>
+    <LR>
+    updateloc = UpdateLoc()
+   (<LR>
+    range = < INT >
+    <RR>)*
+    {if (range != null){
+    int rangeValue = Integer.parseInt(range.image);
+    Double rate = GlobalManager.getParamManager().getParamValue(rateName.image);
+    NoInfAction ac = new NoInfAction(name.image, rate, symbol.image, update.image + "(" + updateloc.image + ")", rangeValue);
+    agent.addAction(ac);
+      }else{
+    int rangeValue = 1; 
+    Double rate = GlobalManager.getParamManager().getParamValue(rateName.image);
+    NoInfAction ac = new NoInfAction(name.image, rate, symbol.image, update.image + "(" + updateloc.image + ")", rangeValue);
+    agent.addAction(ac);}}  
+    <RR>    
+}  
+    
+    
+void InfAction(Agent agent) throws NumberFormatException, RuntimeException, ParseException:
+{
+    Token infset=null, name = null, rate = null, symbolInf =null, update, updatelocInf=null, range = null, rangeNeigh = null; 
+}
+{   
+    <DASH>
+    <RANG>
+    < LBRAC >
+    infset =  InfSet()
+    (<LR>
+    rangeNeigh = < INT >
+    <RR>)*  
+    < RBRAC >
+    <LR>    
+    name = <IDENTIFIER>   
+    <COMMA>
+    rate = <IDENTIFIER>
+    <RR> 
+    symbolInf = MelaSymbol()
+    update = <IDENTIFIER>
+    <LR>
+    updatelocInf = UpdateLoc()
+    (<LR>
+    range = < INT >
+    <RR>)*
+    {if (range != null && rangeNeigh!= null){
+    int rangeValue = Integer.parseInt(range.image);
+    int rangeNeighValue = Integer.parseInt(rangeNeigh.image);
+    Double rateValue = GlobalManager.getParamManager().getParamValue(rate.image);
+    InfAction ac = new InfAction(name.image, rateValue, infset.image, rangeNeighValue, symbolInf.image, update.image + "(" + updatelocInf.image + ")", rangeValue);
+    agent.addAction(ac);}else{
+    if (range == null && rangeNeigh!= null){ 
+    int rangeValue = 1;
+    int rangeNeighValue = Integer.parseInt(rangeNeigh.image);
+    Double rateValue = GlobalManager.getParamManager().getParamValue(rate.image);
+    InfAction ac = new InfAction(name.image, rateValue, infset.image, rangeNeighValue, symbolInf.image, update.image + "(" + updatelocInf.image + ")", rangeValue);
+    agent.addAction(ac);}else{
+    if (range != null && rangeNeigh == null){ 
+    int rangeValue = Integer.parseInt(range.image);
+    int rangeNeighValue = 1;
+    Double rateValue = GlobalManager.getParamManager().getParamValue(rate.image);
+    InfAction ac = new InfAction(name.image, rateValue, infset.image, rangeNeighValue, symbolInf.image, update.image + "(" + updatelocInf.image + ")", rangeValue);
+    agent.addAction(ac);}else{
+    if (range == null && rangeNeigh == null){ 
+    int rangeValue = 1;
+    int rangeNeighValue = 1;
+    Double rateValue = GlobalManager.getParamManager().getParamValue(rate.image);
+    InfAction ac = new InfAction(name.image, rateValue, infset.image, rangeNeighValue, symbolInf.image, update.image + "(" + updatelocInf.image + ")", rangeValue);
+    agent.addAction(ac);}}}}}
+    <RR>
+}
+
+
+void PassAction(Agent agent) throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token name = null, probName = null, update, updatelocPass=null, symbolPass=null, range=null; 
+}
+{
+    <LANG>
+    <DASH>
+    <LR>
+    name = <IDENTIFIER>
+    <COMMA>
+    probName = <IDENTIFIER>
+    <RR>
+    symbolPass = MelaSymbol() 
+    update = <IDENTIFIER>
+    <LR>
+    updatelocPass = UpdateLoc()
+     (<LR>
+    range = < INT >
+    <RR>)*
+    {if (range != null){
+    int rangeValue = Integer.parseInt(range.image);
+    Double prob = GlobalManager.getParamManager().getParamValue(probName.image);
+    PassAction ac = new PassAction(name.image, prob, symbolPass.image, update.image + "(" + updatelocPass.image + ")", rangeValue);
+    agent.addAction(ac);}else{
+    int rangeValue = 1;
+    Double prob = GlobalManager.getParamManager().getParamValue(probName.image);
+    PassAction ac = new PassAction(name.image, prob, symbolPass.image, update.image + "(" + updatelocPass.image + ")", rangeValue);
+    agent.addAction(ac);}}
+    <RR>
+}
+
+void EnvAction(Agent agent) throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token infsetE=null, name=null, rateName=null, update;
+}
+{     
+    <DASH>
+    <RANG>
+    <LBRAC>
+    infsetE = InfSet()
+    <RBRAC>    
+    <LR>    
+    name = <IDENTIFIER>  
+    <COMMA>
+    rateName = <IDENTIFIER>
+    <RR> 
+    <DOT>
+    update = <IDENTIFIER>
+    {Double rate = GlobalManager.getParamManager().getParamValue(rateName.image);
+    EnvAction ac = new EnvAction(name.image, rate, infsetE.image, update.image);
+    agent.addAction(ac); }
+}
+
+
+void Init() throws NumberFormatException, RuntimeException, ParseException :
+{
+    
+}
+{  
+    InitAgent() 
+    (
+        <PARALLEL> 
+        InitAgent() 
+    )*
+         
+        }    
+
+
+void InitAgent() throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token t,x=null,y=null,z=null,n =null;
+}
+{
+    t = <IDENTIFIER>
+    (
+    <LR>
+    x = <INT>
+    (
+       <COMMA>
+    y = <INT>
+    (
+       <COMMA>
+    z = <INT>
+    )?
+    )?    
+    <RR>
+    )?
+    <LSQ>
+    n = <INT>
+    <RSQ>
+ {if (x == null)
+{if (!(GlobalManager.getAgentManager().AgentNames.contains(t.image))) {throw new ParseException("The declared agent is not described in the section #Agents");}
+ int i = GlobalManager.getAgentManager().MatrixAgent.get(t.image);
+ int j = 0;
+ int InitNum = Integer.parseInt(n.image);
+ GlobalManager.getAgentManager().GlobalMatrix[i][j] = InitNum;}
+ else if (GlobalManager.getLocationManager().SpatialSt == "Graph")
+   {{
+   if (!(GlobalManager.getAgentManager().AgentNames.contains(t.image))) {throw new ParseException("The declared agent is not described in the section #Agents");}
+   }
+   int i = GlobalManager.getAgentManager().MatrixAgent.get(t.image);     
+   int xValue = Integer.parseInt(x.image);
+   ArrayList<Integer> LocName = GlobalManager.createListOneD(xValue);
+   {if (y == null && z ==null && GlobalManager.getLocationManager().AllLoc.contains(LocName))
+   {int j = GlobalManager.getLocationManager().MatrixLoc.get(LocName);   
+   int InitNum = Integer.parseInt(n.image);
+   GlobalManager.getAgentManager().GlobalMatrix[i][j]= InitNum;
+   }else
+   {
+     throw new ParseException("The input location does not exist");}
+    } }
+  else if (GlobalManager.getLocationManager().SpatialSt.matches("(?i).*OneD*"))
+    {{
+    if (!(GlobalManager.getAgentManager().AgentNames.contains(t.image))) {throw new ParseException("The declared agent is not described in the section #Agents");}
+    }int i = GlobalManager.getAgentManager().MatrixAgent.get(t.image);
+     int xValue = Integer.parseInt(x.image);
+     ArrayList<Integer> LocName = GlobalManager.createListOneD(xValue); 
+     int InitNum = Integer.parseInt(n.image);
+     {if (y == null && z ==null && GlobalManager.getLocationManager().AllLoc.contains(LocName))
+     {int j = GlobalManager.getLocationManager().MatrixLoc.get(LocName);
+ 	 GlobalManager.getAgentManager().GlobalMatrix[i][j]= InitNum;
+     }else
+     {
+     throw new ParseException("The input location does not exist");}
+     } 
+     }
+       else if (GlobalManager.getLocationManager().SpatialSt.matches("(?i).*TwoD*"))
+ 	   {{
+       if (!(GlobalManager.getAgentManager().AgentNames.contains(t.image))) {throw new ParseException("The declared agent is not described in the section #Agents");}
+       }int i = GlobalManager.getAgentManager().MatrixAgent.get(t.image);      
+       int xValue = Integer.parseInt(x.image);
+       {if (y==null)
+         {throw new ParseException("The input location does not exist");}
+       }      
+       int yValue = Integer.parseInt(y.image);
+       int InitNum = Integer.parseInt(n.image);
+       ArrayList<Integer> LocName = GlobalManager.createListTwoD(xValue, yValue);
+       {if (z ==null && GlobalManager.getLocationManager().AllLoc.contains(LocName))
+       { int j = GlobalManager.getLocationManager().MatrixLoc.get(LocName);
+       GlobalManager.getAgentManager().GlobalMatrix[i][j]= InitNum;
+       }else
+       {
+     throw new ParseException("The input location does not exist");}
+       }
+       }   
+   	     else if (GlobalManager.getLocationManager().SpatialSt.matches("(?i).*ThreeD*"))
+   	     {{
+         if (!(GlobalManager.getAgentManager().AgentNames.contains(t.image))) {throw new ParseException("The declared agent is not described in the section #Agents");}
+         }int i = GlobalManager.getAgentManager().MatrixAgent.get(t.image);
+         int xValue = Integer.parseInt(x.image);
+         {if (y==null)
+         {throw new ParseException("The input location does not exist");}
+         }
+         int yValue = Integer.parseInt(y.image);
+         {if (z==null)
+         {throw new ParseException("The input location does not exist");}
+         }
+         int zValue = Integer.parseInt(z.image);
+         int InitNum = Integer.parseInt(n.image);
+         ArrayList<Integer> LocName = GlobalManager.createListThreeD(xValue,yValue,zValue);
+         {if (GlobalManager.getLocationManager().AllLoc.contains(LocName))
+         {int j = GlobalManager.getLocationManager().MatrixLoc.get(LocName);
+         GlobalManager.getAgentManager().GlobalMatrix[i][j]= InitNum;
+         }else
+         {
+         throw new ParseException("The input location does not exist");}
+         }
+    }
+}
+}
+
+void setGraph()throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token v, v1, e, e1;
+    int BracketsCounter = 0;
+}
+{   <VERTICES >
+    < ASSIGN >
+    < LBRAC >
+    v = <INT>
+    {int vertexName = Integer.parseInt(v.image);   
+    GlobalManager.getLocationManager().AllLoc.add(GlobalManager.createListName(vertexName));
+    GlobalManager.getLocationManager().prepareMap(GlobalManager.createListName(vertexName)); }   
+    (
+        <COMMA>
+        v1 = <INT>
+    {int vertexName1 = Integer.parseInt(v1.image);
+    GlobalManager.getLocationManager().AllLoc.add(GlobalManager.createListName(vertexName1));
+    GlobalManager.getLocationManager().prepareMap(GlobalManager.createListName(vertexName1));}
+      )*
+    < RBRAC >
+    < EOL >
+    < EDGES >
+    <ASSIGN>
+    <LBRAC>
+    {BracketsCounter++;}
+     <LBRAC>
+    {BracketsCounter++;}
+     e = <INT>
+     {int edgeName = Integer.parseInt(e.image);
+     GlobalManager.getLocationManager().addNeighNode(GlobalManager.createListName(edgeName), BracketsCounter);}
+    (<COMMA>
+     e1 = <INT>
+     {int edgeName1 = Integer.parseInt(e1.image);
+     GlobalManager.getLocationManager().addNeighNode(GlobalManager.createListName(edgeName1), BracketsCounter);})*
+     <RBRAC>
+     (
+       <COMMA>
+     <LBRAC>
+     {BracketsCounter++;}
+     e = <INT>
+     {int edgeName2 = Integer.parseInt(e.image);
+     GlobalManager.getLocationManager().addNeighNode(GlobalManager.createListName(edgeName2), BracketsCounter);}
+      (
+        <COMMA>
+       e1 = <INT>
+     {int edgeName3 = Integer.parseInt(e1.image);
+     GlobalManager.getLocationManager().addNeighNode(GlobalManager.createListName(edgeName3), BracketsCounter);})*
+     <RBRAC>
+       )*
+     <RBRAC>
+     {if ((BracketsCounter-1) !=  GlobalManager.getLocationManager().AllLoc.size())
+     {throw new ParseException("Wrong input for edges - no matching number of entries");}
+     }
+     < EOL >
+}
+
+void setOneD()throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token x;
+}
+{   <LR>
+    x = <INT>
+   {int xValue = Integer.parseInt(x.image);
+   GlobalManager.getLocationManager().OneD = xValue;
+   GlobalManager.createAllLocOneD(xValue);}
+   <RR>
+}
+
+void setTwoD()throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token x, y;
+}
+{   <LR>
+    x = <INT>
+    < COMMA >
+    y = < INT >
+   <RR>
+   {int xValue = Integer.parseInt(x.image);
+    int yValue = Integer.parseInt(y.image);
+    GlobalManager.getLocationManager().TwoDx = xValue;
+    GlobalManager.getLocationManager().TwoDy = yValue;
+    GlobalManager.createAllLocTwoD(xValue, yValue);}
+}
+
+void setThreeD()throws NumberFormatException, RuntimeException, ParseException :
+{
+    Token x, y, z;
+}
+{   <LR>
+    x = <INT>
+    < COMMA >
+    y = < INT >
+    < COMMA >
+    z = < INT >
+   <RR>
+   {int xValue = Integer.parseInt(x.image);
+    int yValue = Integer.parseInt(y.image);
+    int zValue = Integer.parseInt(z.image);  
+    GlobalManager.getLocationManager().ThreeDx = xValue;
+    GlobalManager.getLocationManager().ThreeDy = yValue;
+    GlobalManager.getLocationManager().ThreeDz = zValue;
+    GlobalManager.createAllLocThreeD(xValue, yValue, zValue);}
+}

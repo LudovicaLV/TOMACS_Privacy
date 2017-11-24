@@ -1,0 +1,47 @@
+const d0 = 0;
+const df = 25;
+const dmax = 10;
+
+variable S_0; 
+variable S_1; 
+variable S_2; 
+variable S_3; 
+variable S_4; 
+variable M_0; 
+variable M_1; 
+variable M_2; 
+variable M_3; 
+variable M_4; 
+variable MN; 
+variable C; 
+variable X; 
+
+formula infoMoving =  {M_0>0} |{M_1>0} |{M_2>0} |{M_3>0} |{M_4>0};
+formula exit =  {X>0};
+formula member = {MN>0};
+formula corrupt = {C>0};
+
+formula source =  {S_0>0} |{S_1>0} |{S_2>0} |{S_3>0} |{S_4>0};
+
+formula infoMoving0 =  {M_0>0} 
+formula infoMoving1 =  {M_1>0} 
+formula infoMoving2 =  {M_2>0} 
+formula infoMoving3 =  {M_3>0} 
+formula infoMoving4 =  {M_4>0} 
+
+formula corruptM0 = corrupt & infoMoving0;
+formula corruptM1 = corrupt & infoMoving1;
+formula corruptM2 = corrupt & infoMoving2;
+formula corruptM3 = corrupt & infoMoving3;
+formula corruptM4 = corrupt & infoMoving4;
+
+formula noMoving = !infoMoving;
+formula noSource = !source;
+
+formula noMore = noSource & noMoving;
+formula noMoreMessages = [[]][0,dmax](noMore);
+
+formula deliver = \F[d0,df] noMoreMessages;
+
+
+

@@ -1,0 +1,112 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.jsstl</groupId>
+    <artifactId>org.jsstl.tycho.root</artifactId> 
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <parent>
+            <groupId>org.jsstl</groupId>
+            <artifactId>org.jsstl.tycho.configuration</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../org.jsstl.tycho.configuration</relativePath>
+    </parent>
+
+	<properties>
+		<tycho-version>0.24.0</tycho-version>
+		<tycho-extras-version>0.24.0</tycho-extras-version>
+		<maven-surefire-plugin.version>2.16</maven-surefire-plugin.version>
+		<maven-antrun-plugin.version>1.7</maven-antrun-plugin.version>
+		<junit-version>4.11</junit-version>
+		<jacoco-version>0.7.4.201502262128</jacoco-version>
+		<findbugs-version>2.5.5</findbugs-version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<xtext.version>2.9.1</xtext.version>
+		<platform-version>[3.9,4.0)</platform-version>
+		<fornax-oaw-m2-plugin-version>3.5.1</fornax-oaw-m2-plugin-version>
+		
+		<!-- tests and runtime args -->
+		<os-jvm-flags />
+		<memoryArgs>-Xms256M -Xmx1024M -XX:PermSize=256M -XX:MaxPermSize=256M -XX:+HeapDumpOnOutOfMemoryError</memoryArgs>
+		<uiTestsArgs>${memoryArgs} ${os-jvm-flags} -Dorg.eclipse.swt.browser.DefaultType=mozilla</uiTestsArgs>
+		<pdeTestsArgs>-DbuildingWithTycho=true</pdeTestsArgs>
+		<swtbotTestsArgs>${uiTestsArgs} -Dorg.eclipse.swtbot.search.timeout=180000 -Dorg.eclipse.swt.internal.gtk.cairoGraphics=false</swtbotTestsArgs>
+		
+		<!-- <jacoco.reportPath>../target/jacoco.exec</jacoco.reportPath> -->
+		<!-- <findbugs.reportPath>../target/findbugs</findbugs.reportPath>  -->
+		
+		<!-- Sonar -->
+		<sonar.language>java</sonar.language>
+		<sonar.core.codeCoveragePlugin>jacoco</sonar.core.codeCoveragePlugin>
+		<sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+		<sonar.jacoco.reportPath>${project.basedir}/../../target/jacoco.exec</sonar.jacoco.reportPath>
+		<jacoco.reportPath>${project.basedir}/../../target/coverage</jacoco.reportPath>
+		<jacoco.xml.reportPath>${jacoco.reportPath}/coverage.xml</jacoco.xml.reportPath>
+		<!--  <sonar.junit.reportsPath>../${project.artifactId}.tests/target/surefire-reports/</sonar.junit.reportsPath> -->
+		<sonar.exclusions>file:**/src-gen/**,file:**/emf-gen/**,file:**/example/**,file:**/tests/**,**/*RuntimeModule.java,**/*UiModule.java,**/*XcoreReader.java,**/*UiExamples.java,**/*TypeSystemGen*.java,**/*StandaloneSetup*.java</sonar.exclusions>
+
+		<!-- see http://sonarqube.15.x6.nabble.com/sonar-issue-ignore-multicriteria-td5021722.html and
+		 http://stackoverflow.com/questions/21825469/configure-sonar-sonar-issue-ignore-multicriteria-through-maven
+		 for the multicriteria property -->
+		<sonar.issue.ignore.multicriteria>e1,e2</sonar.issue.ignore.multicriteria>
+
+		<!-- standard convention for method names: in the outline tree provider we
+		 must use methods that start with _ and they'd violate the rule squid:S00100 -->
+        <sonar.issue.ignore.multicriteria.e1.ruleKey>squid:S00100</sonar.issue.ignore.multicriteria.e1.ruleKey>
+        <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*OutlineTreeProvider.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
+
+		<!-- "Tabulation characters should not be used"
+		 sorry... I don't agree :) -->
+        <sonar.issue.ignore.multicriteria.e2.ruleKey>squid:S00105</sonar.issue.ignore.multicriteria.e2.ruleKey>
+        <sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
+
+		<!--  sonar.skippedModules is deprecated: https://jira.codehaus.org/browse/SONAR-5109 -->
+		<!-- <sonar.skippedModules>it.xsemantics.dsl.tests,it.xsemantics.example.fj.tests,it.xsemantics.example.expressions.tests,it.xsemantics.example.lambda.tests,it.xsemantics.tests.swtbot</sonar.skippedModules> -->
+		<!-- instead we must use advanced reactor options: https://jira.codehaus.org/browse/MSONAR-61  -->
+		<!-- Example:
+			mvn sonar:sonar -pl :it.xsemantics.parent,:it.xsemantics.runtime,:it.xsemantics.dsl,:it.xsemantics.dsl.ui
+		 -->
+
+		<!-- Otherwise we'll have problems due to generated sources, which are
+		 not in the git repository (since Sonarqube 5) -->
+		<sonar.scm.disabled>true</sonar.scm.disabled>		
+		
+		<findbugs.skip>false</findbugs.skip>
+		<mwe2.skip>false</mwe2.skip>
+		<xtext.maven.skip>false</xtext.maven.skip>
+		<dsl.tests.skip>false</dsl.tests.skip>
+		<swtbot.tests.only>false</swtbot.tests.only>
+		<swtbot.tests.skip>false</swtbot.tests.skip>
+		
+		<target-file-name>mars-xtext-2.9</target-file-name>
+		
+		<!-- properties for deploying the composite update site and zipped products on Sourceforge -->
+		
+		<ant-files-path>${basedir}/../../RELENG/org.jsstl.tycho.parent/ant</ant-files-path>
+
+		<updates.dir>jsstl</updates.dir>
+		<remote.dir>mloreti,quanticol@frs.sourceforge.net:/home/frs/project/quanticol</remote.dir>
+		<remote.updates.dir>jSSTL/updates/releases</remote.updates.dir>
+		<remote.zips.dir>zips</remote.zips.dir>
+		<site.label>jSSTL Site</site.label>
+
+		<!-- remote host zips dir -->
+		<rsync.remote.zips.dir>${remote.dir}/${remote.zips.dir}</rsync.remote.zips.dir> 
+		<!-- remote rsync host -->
+		<rsync.remote.dir>${remote.dir}/${remote.updates.dir}/</rsync.remote.dir> 
+		<!-- local source directory for rsync (read from this directory) -->
+		<rsync.local.dir>${user.home}/p2.repositories/${updates.dir}/</rsync.local.dir>
+		<!-- pass "-n" to perform a trial run with no changes made -->
+		<dryrun></dryrun>
+	</properties>
+	
+    <modules>
+        <module>../../bundles/org.jsstl.core</module>
+        <module>../../XTEXT/org.jsstl.xtext.formulas</module>
+        <module>../../XTEXT/org.jsstl.xtext.formulas.ui</module>
+        <module>../../UI/org.jsstl.ui</module>
+        <module>../../RELENG/org.jsstl.tycho.configuration</module>
+        <module>../../FEATURES/org.jsstl.xtext.formulas.sdk</module>
+		<module>../../FEATURES/org.jsstl.feature</module>       
+        <module>../../RELENG/org.jsstl.tycho.repository</module>
+    </modules>
+</project> 

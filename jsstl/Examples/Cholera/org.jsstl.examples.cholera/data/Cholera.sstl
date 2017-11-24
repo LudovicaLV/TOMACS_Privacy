@@ -1,0 +1,29 @@
+const cinf = 150;
+const T_Start = 1;
+const DT = 4;
+const dnear = 3;
+const dfar = 13;
+const dmax = 15;
+				
+variable B;
+variable s;
+variable I;
+variable R;
+		
+formula phi1 = 
+	\F[0,5]
+		<<>>[ 12 , 15 ] 
+			{ I > cinf };
+		
+formula psi1 = 
+	\F[0, T_Start]
+		<<>>[0, dnear] 
+			{I > cinf};
+
+formula psi2 = 
+	\F[T_Start, T_Start + DT]
+		<<>>[dfar,dmax]
+			{I>cinf};
+	
+formula phi2 = 
+	[[]][0,dmax]!(psi1&(!psi2));
