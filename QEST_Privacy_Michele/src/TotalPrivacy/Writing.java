@@ -4,27 +4,27 @@ import ParserProg5Privacy.ModelPrivacy;
 
 public class Writing {
 	
-	//used in SimulatorCells
+	//used in SimulatorPrivacy
 	public static String Log (){	
-		String log = "/Users/ludovicaluisavissat/workspacejSSTL/QEST_Privacy3/src/Output/Log/Output" +  ModelPrivacy._SIMULATION_ID;
+		String log = TotalPrivacy.Folder + "Output/Log/Output" +  ModelPrivacy._SIMULATION_ID;
 		return log;
 	}
 
-	//used in SimulatorCells
+	//used in SimulatorPrivacy
 	public static String Meta (){	
-		String meta = "/Users/ludovicaluisavissat/workspacejSSTL/QEST_Privacy3/src/Output/Meta/Output" +  ModelPrivacy._SIMULATION_ID;
+		String meta = TotalPrivacy.Folder + "Output/Meta/Output" +  ModelPrivacy._SIMULATION_ID;
 		return meta;
 	}
 	
-	//used in SimulatorCells
+	//used in SimulatorPrivacy
 	public static String Data (){	
-		String meta = "/Users/ludovicaluisavissat/workspacejSSTL/QEST_Privacy3/src/Output/Data/Output" +  ModelPrivacy._SIMULATION_ID;
+		String meta = TotalPrivacy.Folder + "Output/Data/Output" +  ModelPrivacy._SIMULATION_ID;
 		return meta;
 	}
 
-	//used in SimulatorCells
+	//used in SimulatorPrivacy
 	public static String Cost (){	
-		String meta = "/Users/ludovicaluisavissat/workspacejSSTL/QEST_Privacy3/src/Output/Cost/Output" +  ModelPrivacy._SIMULATION_ID;
+		String meta = TotalPrivacy.Folder + "Output/Cost/Output" +  ModelPrivacy._SIMULATION_ID;
 		return meta;
 	}
 }

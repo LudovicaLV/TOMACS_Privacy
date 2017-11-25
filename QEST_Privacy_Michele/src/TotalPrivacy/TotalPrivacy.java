@@ -7,6 +7,8 @@ public class TotalPrivacy {
 	public static int numberOfRuns = 1;
 	public static int simulationTime = 100;
 	
+	public static String Folder = "/Users/ludovicaluisavissat/workspacejSSTL/QEST_Privacy_Michele/src/";
+	
 	//cost analysis
 	public static String[] ListAction = {};
 	public static double[] ListCost = {};
